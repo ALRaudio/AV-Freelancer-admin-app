@@ -11,10 +11,9 @@ A lightweight **Flask-based web application** to help freelancers or small studi
 - SQLite (included by default)  
 - Flask and SQLAlchemy (already in `requirements.txt`)
 
-### Basic Installation
+### Basic local Installation
 
 ```bash
-git clone https://github.com/your-repo/freelancer-admin-app.git
 cd freelancer-admin-app
 pip install -r requirements.txt
 python app.py
@@ -26,18 +25,22 @@ The app will start locally at:
 http://localhost:5000
 ```
 
-### Running on a Synology NAS
+### Running on a Synology NAS (Container Manager – recommended)
 
-1. Go to **Package Center → Python3 → Install**  
-2. Open **Task Scheduler → Create → Scheduled Task → User-defined script**
-3. Example startup command:
-   ```bash
-   cd /volume1/web/freelancer-admin-app
-   /volume1/@appstore/py3k/usr/local/bin/python3 app.py
-   ```
-4. The app will run at `http://<your-nas-ip>:5000` (or any port you set).
+1. **Install “Container Manager”** from Package Center.  
+2. **Copy the app folder** (this repository) into your NAS at: `/docker/freelancer-admin-app`  
+   > You should have `/docker/freelancer-admin-app/docker-compose.yml`, `app.py`, `templates/`, etc.
+3. In **Container Manager**, create a **Project** and set the **Source** to `/docker/freelancer-admin-app`.  
+4. Use the existing **`docker-compose.yml`** in that folder to create the project (stack).  
+5. **Expose port 8080** and create a **Reverse Proxy** (Control Panel → Login Portal → Advanced → Reverse Proxy):  
+   - **Source**: your domain/subdomain, **port 443** (HTTPS)  
+   - **Destination**: NAS **IP**, **port 8080** (the container’s published port)  
+   - Optionally enable automatic certificate (Let’s Encrypt) on the source host for HTTPS.
 
-> 💡 You can also use Docker, reverse proxies (Nginx, Traefik), or assign a subdomain if desired.
+> After deployment, your app will be available at:  
+> - Local: `http://<nas-ip>:8080` (or the port you mapped)  
+> - Internet: `https://your.domain.tld` (through the reverse proxy)
+
 
 ---
 
