@@ -1,0 +1,202 @@
+{% extends "_layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="h1">Settings <span style="font-size:0.8rem;color:#888;">v11</span></div>
+  <form method="post" action="/settings" enctype="multipart/form-data" class="grid-1">
+  <div class="row">
+    <div>
+      <div class="small">Company Logo</div>
+      <input class="input" type="file" name="company_logo_file" accept="image/*">
+      <div class="small" style="margin-top:6px;">Or logo URL</div>
+      <input class="input" name="company_logo_url" value="{{ settings.company_logo_url or '' }}" placeholder="https://...">
+    </div>
+    <div>
+      <div class="small">Favicon</div>
+      <input class="input" type="file" name="favicon_file" accept="image/*">
+      <div class="small" style="margin-top:6px;">Or favicon URL</div>
+      <input class="input" name="favicon_url" value="{{ settings.favicon_url or '' }}" placeholder="https://... (PNG/ICO or data: URL)">
+    </div>
+  </div>
+
+  <div>
+    <div class="small">Currency</div>
+    <select class="input" name="currency_code">
+      <option value="SEK" {% if settings.currency_code=='SEK' %}selected{% endif %}>SEK</option>
+      <option value="EUR" {% if settings.currency_code=='EUR' %}selected{% endif %}>EUR</option>
+      <option value="USD" {% if settings.currency_code=='USD' %}selected{% endif %}>USD</option>
+      <option value="GBP" {% if settings.currency_code=='GBP' %}selected{% endif %}>GBP</option>
+      <option value="NOK" {% if settings.currency_code=='NOK' %}selected{% endif %}>NOK</option>
+      <option value="DKK" {% if settings.currency_code=='DKK' %}selected{% endif %}>DKK</option>
+      <option value="CHF" {% if settings.currency_code=='CHF' %}selected{% endif %}>CHF</option>
+      <option value="CAD" {% if settings.currency_code=='CAD' %}selected{% endif %}>CAD</option>
+      <option value="AUD" {% if settings.currency_code=='AUD' %}selected{% endif %}>AUD</option>
+      <option value="NZD" {% if settings.currency_code=='NZD' %}selected{% endif %}>NZD</option>
+      <option value="JPY" {% if settings.currency_code=='JPY' %}selected{% endif %}>JPY</option>
+      <option value="CNY" {% if settings.currency_code=='CNY' %}selected{% endif %}>CNY</option>
+      <option value="HKD" {% if settings.currency_code=='HKD' %}selected{% endif %}>HKD</option>
+      <option value="SGD" {% if settings.currency_code=='SGD' %}selected{% endif %}>SGD</option>
+      <option value="INR" {% if settings.currency_code=='INR' %}selected{% endif %}>INR</option>
+      <option value="BRL" {% if settings.currency_code=='BRL' %}selected{% endif %}>BRL</option>
+      <option value="ZAR" {% if settings.currency_code=='ZAR' %}selected{% endif %}>ZAR</option>
+      <option value="PLN" {% if settings.currency_code=='PLN' %}selected{% endif %}>PLN</option>
+      <option value="CZK" {% if settings.currency_code=='CZK' %}selected{% endif %}>CZK</option>
+      <option value="HUF" {% if settings.currency_code=='HUF' %}selected{% endif %}>HUF</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <div>
+      <div class="small">Night start hour (0–23)</div>
+      <input class="input" type="number" name="night_start_hour" value="{{ settings.night_start_hour or 0 }}" min="0" max="23">
+    </div>
+    <div>
+      <div class="small">Night end hour (0–23)</div>
+      <input class="input" type="number" name="night_end_hour" value="{{ settings.night_end_hour or 8 }}" min="0" max="23">
+    </div>
+  </div>
+
+  <div class="row-3">
+    <div>
+      <div class="small">Net rate (%)</div>
+      <input class="input" type="number" step="0.01" name="net_rate_percent" value="{{ settings.net_rate_percent or 70.0 }}">
+    </div>
+    <div>
+      <div class="small">Enable Login</div>
+      <select class="input" name="login_enabled">
+        <option value="0" {% if not settings.login_enabled %}selected{% endif %}>No</option>
+        <option value="1" {% if settings.login_enabled %}selected{% endif %}>Yes</option>
+      </select>
+    </div>
+    <div>
+      <div class="small">Login Password</div>
+      <input class="input" name="login_password" placeholder="Set/Change password (leave blank to keep)">
+    </div>
+  </div>
+
+  <div style="margin-top:10px;"><button class="btn">Save Settings</button></div>
+</form>
+</div>
+
+<div class="card">
+  <div class="h1">Google Calendar – Connection</div>
+
+  <form method="post" action="/settings" class="grid-4">
+  <div>
+    <div class="small">Target Calendar ID</div>
+    <input class="input" name="gcal_calendar_id" value="{{ settings.gcal_calendar_id or 'primary' }}" placeholder="primary or id@group.calendar.google.com">
+  </div>
+  <div>
+    <div class="small">Google Calendar embed URL</div>
+    <input class="input" name="google_calendar_embed_url" value="{{ settings.google_calendar_embed_url or '' }}" placeholder="https://calendar.google.com/calendar/embed?src=...">
+  </div>
+  <div>
+    <div class="small">Auto-create events</div>
+    <select class="input" name="gcal_enabled">
+      <option value="0" {% if not settings.gcal_enabled %}selected{% endif %}>Disabled</option>
+      <option value="1" {% if settings.gcal_enabled %}selected{% endif %}>Enabled</option>
+    </select>
+  </div>
+  <div class="flex-col align-end">
+    <div>
+      <div class="small">Status</div>
+      <div id="gcal-status" style="display:inline-block;padding:6px 10px;border-radius:999px;background:#eee;color:#555;">Unknown</div>
+    </div>
+    <button type="button" id="btnTestGCal" class="btn">Test Calendar Connection</button>
+    <span id="gcal-msg" class="small" style="color:#666;"></span>
+  </div>
+
+  <div style="grid-column:1 / -1; margin-top:10px;"><button class="btn" type="submit">Save Connection</button></div>
+</form>
+
+  <div class="small" style="margin-top:8px;color:#888;">
+    Note: the files <code>credentials.json</code> and <code>token.json</code> must be present in <code>/app/config</code> or <code>/app/data</code> (the system checks both locations).
+  </div>
+</div>
+
+<div class="card">
+  <div class="h1">Public Holidays</div>
+  <form method="post" action="/settings/holiday/add" class="grid-3" style="margin-bottom:12px;">
+    <div><div class="small">Date</div><input class="input" type="date" name="date" required></div>
+    <div><div class="small">Name</div><input class="input" name="name" required></div>
+    <div><div class="small">Surcharge note</div><input class="input" name="surcharge_text" placeholder="e.g., +50%"></div>
+    <div><button class="btn" type="submit">Add holiday</button></div>
+  </form>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Name</th><th>Surcharge</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for h in holidays %}
+        <tr>
+          <form method="post" action="/settings/holiday/{{ h.id }}/update">
+            <td><input class="input" type="date" name="date" value="{{ h.date.isoformat() }}"></td>
+            <td><input class="input" name="name" value="{{ h.name }}"></td>
+            <td><input class="input" name="surcharge_text" value="{{ h.surcharge_text or '' }}"></td>
+            <td style="display:flex;gap:6px;">
+              <button class="btn secondary">Save</button>
+          </form>
+              <form method="post" action="/settings/holiday/{{ h.id }}/delete"><button class="btn">Delete</button></form>
+            </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function(){
+  const btn = document.getElementById('btnTestGCal');
+  const badge = document.getElementById('gcal-status');
+  const msg = document.getElementById('gcal-msg');
+
+  function setStatus(state, text) {
+    badge.textContent = text || state;
+    if (state === 'connected') {
+      badge.style.background = '#d9f5e5';
+      badge.style.color = '#0a7f47';
+      badge.style.border = '1px solid #a6e7c7';
+    } else if (state === 'disconnected') {
+      badge.style.background = '#ffe7e7';
+      badge.style.color = '#a40000';
+      badge.style.border = '1px solid #ffc1c1';
+    } else {
+      badge.style.background = '#eee';
+      badge.style.color = '#555';
+      badge.style.border = '1px solid #ddd';
+    }
+  }
+
+  // état par défaut selon la config
+  {% if settings.gcal_enabled %}
+    setStatus('unknown', 'Unknown (enabled)');
+  {% else %}
+    setStatus('disconnected', 'Disabled');
+  {% endif %}
+
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      msg.textContent = '';
+      const old = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Testing…';
+      try {
+        const r = await fetch('/settings/test-gcal', { method: 'POST' });
+        const j = await r.json();
+        if (j.ok) {
+          setStatus('connected', 'Connected');
+          msg.textContent = '✅ Event created: ' + j.eventId;
+        } else {
+          setStatus('disconnected', 'Disconnected');
+          msg.textContent = '❌ ' + (j.msg || 'Test failed');
+        }
+      } catch (e) {
+        setStatus('disconnected', 'Disconnected');
+        msg.textContent = '❌ ' + e;
+      } finally {
+        btn.disabled = false; btn.textContent = old;
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

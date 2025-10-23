@@ -1,0 +1,55 @@
+{% extends "_layout.html" %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+  <div class="h1">Statistics</div>
+  <form method="get" action="{{ url_for('statistics') }}" style="display:flex;gap:8px;align-items:center;">
+    <select class="input" name="year" style="width:auto;">
+      {% for y in years %}<option value="{{ y }}" {% if y==year %}selected{% endif %}>{{ y }}</option>{% endfor %}
+    </select>
+    <button class="btn secondary">Apply</button>
+  </form>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="h1" style="font-size:16px;">Hours by Client per Month</div>
+    <div class="small">Totals: {{ totals.hours_year }} h</div>
+  </div>
+  <canvas id="hoursChart" height="120"></canvas>
+</div>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="h1" style="font-size:16px;">Jobs by Client per Month</div>
+    <div class="small">Totals: {{ totals.jobs_year }}</div>
+  </div>
+  <canvas id="jobsChart" height="120"></canvas>
+</div>
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div class="h1" style="font-size:16px;">Revenue by Client per Month (Net)</div>
+    <div class="small">Totals: {{ totals.revenue_year|fmt_money }} {{ settings.currency_code or 'SEK' }}</div>
+  </div>
+  <canvas id="revenueChart" height="120"></canvas>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<script>
+const colors = ["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6","#14b8a6","#f97316","#22d3ee","#84cc16"];
+function mkDatasets(series, clients){
+  return clients.map((c,i)=>({label:c, data: series[c], backgroundColor: colors[i%colors.length]}));
+}
+function intTicks(){ return {ticks:{callback:(v)=>parseInt(v,10)}, stacked:true}; }
+fetch("/api/stats/{{year}}").then(r=>r.json()).then(data=>{
+  const opts = {responsive:true, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(ctx)=>`${ctx.dataset.label}: ${parseInt(ctx.parsed.y,10)}`}}}, scales:{x:{stacked:true},y:intTicks()}};
+  new Chart(document.getElementById('hoursChart'), { type:'bar',
+    data:{ labels:data.months, datasets: mkDatasets(data.hours, data.clients_hours) }, options:opts });
+  new Chart(document.getElementById('jobsChart'), { type:'bar',
+    data:{ labels:data.months, datasets: mkDatasets(data.jobs, data.clients_jobs) }, options:opts });
+  new Chart(document.getElementById('revenueChart'), { type:'bar',
+    data:{ labels:data.months, datasets: mkDatasets(data.revenue, data.clients_revenue) }, options:opts });
+  const lg = document.getElementById('legend'); lg.innerHTML = '';
+  (data.clients_hours || []).forEach((c,i)=>{ const el = document.createElement('div'); el.innerHTML = `<span style="display:inline-block;width:10px;height:10px;background:${colors[i%colors.length]};border-radius:2px;margin-right:6px;"></span>${c}`; lg.appendChild(el); });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "_layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="h1" style="font-size:18px;">Edit Client</div>
+  <form method="post" action="{{ url_for('edit_client', client_id=client.id) }}">
+    <div class="grid-3">
+      <div><div class="small">Name</div><input class="input" name="name" value="{{ client.name }}"></div>
+      <div><div class="small">Default VAT (%)</div>
+        <select class="input" name="default_vat_percent">
+          <option value="25" {% if client.default_vat_percent==25 %}selected{% endif %}>25</option>
+          <option value="0" {% if client.default_vat_percent==0 %}selected{% endif %}>0</option>
+        </select>
+      </div>
+      <div><div class="small">Logo URL</div><input class="input" name="logo_url" value="{{ client.logo_url or '' }}"></div>
+    </div>
+    <div style="margin-top:10px;"><button class="btn">Save</button></div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freelancer Admin App – Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);}
+    .login-card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.06);padding:24px;max-width:420px;width:100%;text-align:center;}
+    .login-logo{width:200px;height:auto;margin:6px auto 12px auto;display:block;object-fit:contain}
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <img class="login-logo" src="{{ (settings.company_logo_url if settings and settings.company_logo_url else url_for('static', filename='logo.svg')) }}" alt="Logo">
+    <div class="h1" style="font-size:20px;margin-bottom:8px;">Freelancer Admin App</div>
+    {% if error %}<div style="color:#b91c1c" class="small">{{ error }}</div>{% endif %}
+    <form method="post" style="margin-top:12px;">
+      <div class="small" style="text-align:left;">Password</div>
+      <input class="input" type="password" name="password" required>
+      <div style="margin-top:12px;display:flex;justify-content:flex-end;">
+        <button class="btn" type="submit">Login</button>
+      </div>
+    </form>
+    
+  </div>
+</div>
+</body>
+</html>

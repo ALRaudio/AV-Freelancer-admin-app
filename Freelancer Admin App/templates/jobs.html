@@ -1,0 +1,186 @@
+{% extends "_layout.html" %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div class="h1">Jobs</div>
+    <button class="btn" onclick="openModal()">+ New Job</button>
+  </div>
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Start</th><th>End</th><th>Client</th><th>Role</th><th>Duration</th><th>VAT</th><th>Amount</th><th>Detail</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for j in upcoming_jobs %}
+      <tr>
+        <td>{{ j.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ j.end_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ j.client.name }}</td>
+        <td>{{ j.role.name }} ({{ 'per hour' if j.role.mode=='hourly' else ('per day' if j.role.mode=='daily' else ('per week' if j.role.mode=='weekly' else 'per production')) }})</td>
+        <td>{{ j.duration_hours|round(0)|int }} h</td>
+        <td>{{ j.vat_percent }}%</td>
+        <td>{{ j.amount_sek|fmt_money }} {{ settings.currency_code or 'SEK' }}</td>
+        <td>{{ j.detail }}</td>
+        <td class="actions">
+          <form method="post" action="{{ url_for('delete_job', job_id=j.id) }}" onsubmit="return confirm('Delete this job? This will also remove the Google Calendar event if linked.');">
+            <button class="btn danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="h1">Past Jobs</div>
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Start</th><th>End</th><th>Client</th><th>Role</th><th>Duration</th><th>VAT</th><th>Amount</th><th>Detail</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for j in past_jobs %}
+      <tr>
+        <td>{{ j.start_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ j.end_dt.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ j.client.name }}</td>
+        <td>{{ j.role.name }} ({{ 'per hour' if j.role.mode=='hourly' else ('per day' if j.role.mode=='daily' else ('per week' if j.role.mode=='weekly' else 'per production')) }})</td>
+        <td>{{ j.duration_hours|round(0)|int }} h</td>
+        <td>{{ j.vat_percent }}%</td>
+        <td>{{ j.amount_sek|fmt_money }} {{ settings.currency_code or 'SEK' }}</td>
+        <td>{{ j.detail }}</td>
+        <td class="actions">
+          <form method="post" action="{{ url_for('delete_job', job_id=j.id) }}" onsubmit="return confirm('Delete this job? This will also remove the Google Calendar event if linked.');">
+            <button class="btn danger" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div id="modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="title h1" style="font-size:18px;">Add New Job</div>
+    <div id="holidayWarn" class="small" style="color:#b91c1c; display:none;">⚠️ Holiday date selected</div>
+    <div id="nightWarn" class="small" style="color:#b91c1c; display:none;">⚠️ Night hours</div>
+    <form method="post" action="{{ url_for('add_job') }}" id="jobForm">
+      <div class="grid-2">
+        <div><div class="small">Start Date & Time</div><input class="input" type="datetime-local" name="start_dt" required></div>
+        <div><div class="small">End Date & Time</div><input class="input" type="datetime-local" name="end_dt" required></div>
+        <div><div class="small">Client</div>
+          <select class="input" name="client_id" id="clientSelect" required onchange="loadRoles()">
+            <option value="">Select client</option>
+            {% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div><div class="small">Role</div>
+          <select class="input" name="role_id" id="roleSelect" required>
+            <option value="">Select role</option>
+          </select>
+        </div>
+                <div><div class="small">Detail / Description</div><input class="input" type="text" name="detail" placeholder="Short detail" maxlength="140"></div>
+        <div><div class="small">Duration (auto)</div><input class="input" type="text" id="durationPreview" readonly></div>
+        <div><div class="small">Amount ({{ settings.currency_code or 'SEK' }})</div><input class="input" type="text" id="amountPreview" readonly></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:12px;">
+        <button type="button" class="btn secondary" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn">Save Job</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(){ document.getElementById('modal').style.display='flex'; }
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+const ROLES_BY_CLIENT = {{ roles_data | tojson }};
+
+function loadRoles(){
+  const clientId = document.getElementById('clientSelect').value;
+  const roleSelect = document.getElementById('roleSelect');
+  roleSelect.innerHTML = '<option value="">{% raw %}Select role{% endraw %}</option>';
+  if(!clientId) { updatePreview(); return; }
+  const roles = ROLES_BY_CLIENT[clientId] || [];
+  roles.forEach(function(r){
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.dataset.mode = r.mode;
+    opt.dataset.rate = r.rate;
+    var unit = (r.mode==='hourly') ? 'per hour' : (r.mode==='daily' ? 'per day' : (r.mode==='weekly' ? 'per week' : 'per production'));
+    opt.textContent = r.name + ' (' + unit + ' • ' + r.rate + ' {{ settings.currency_code or 'SEK' }})';
+    roleSelect.appendChild(opt);
+  });
+  updatePreview();
+}
+
+['start_dt','end_dt','role_id'].forEach(name => {
+  document.getElementById('jobForm').addEventListener('change', updatePreview);
+});
+
+let NIGHT = {start: 0, end: 8};
+fetch('/api/settings').then(r=>r.json()).then(j=>{
+  NIGHT.start = j.night_start_hour; NIGHT.end = j.night_end_hour;
+});
+
+async function checkWarnings(){
+  const sv = document.querySelector('[name=start_dt]').value;
+  const ev = document.querySelector('[name=end_dt]').value;
+  const start = sv? new Date(sv) : null;
+  const end = ev? new Date(ev) : null;
+  const nightEl = document.getElementById('nightWarn');
+  let night = false;
+  if (start && end){
+    night = overlapsNight(start,end,NIGHT.start,NIGHT.end);
+  }
+  nightEl.style.display = night ? 'block':'none';
+
+  if(sv){
+    const r = await fetch('/api/holiday?date='+sv.substring(0,10));
+    const j = await r.json();
+    document.getElementById('holidayWarn').style.display = j.is_holiday ? 'block':'none';
+  }
+}
+document.querySelector('[name=start_dt]').addEventListener('change', checkWarnings);
+document.querySelector('[name=end_dt]').addEventListener('change', checkWarnings);
+
+function overlapsNight(start,end,ns,ne){
+  let t = new Date(start);
+  while (t <= end){
+    const h = t.getHours();
+    if (ns < ne ? (h>=ns && h<ne) : (h>=ns || h<ne)) return true;
+    t = new Date(t.getTime() + 60*60000);
+  }
+  const hEnd = end.getHours();
+  if (ns < ne ? (hEnd>=ns && hEnd<ne) : (hEnd>=ns || h<ne)) return true;
+  return false;
+}
+
+function parseDT(v){ return v ? new Date(v) : null; }
+function hoursDiff(a,b){ return (b - a) / 36e5; }
+function updatePreview(){
+  const start = parseDT(document.querySelector('[name=start_dt]').value);
+  const end = parseDT(document.querySelector('[name=end_dt]').value);
+  const roleOpt = document.getElementById('roleSelect').selectedOptions[0];
+  const dur = (start && end) ? Math.max(0, hoursDiff(start,end)) : 0;
+  document.getElementById('durationPreview').value = dur ? (Math.round(dur) + ' h') : '';
+  if(roleOpt){
+    const mode = roleOpt.dataset.mode, rate = parseFloat(roleOpt.dataset.rate || '0');
+    let amount = 0;
+    if(mode==='hourly'){ amount = dur * rate; }
+    else if(mode==='production'){ amount = rate; }
+    else if(mode==='daily'){ 
+      const days = start && end ? Math.max(0, Math.floor((new Date(end.getFullYear(),end.getMonth(),end.getDate()) - new Date(start.getFullYear(),start.getMonth(),start.getDate()))/86400000) + 1) : 0;
+      amount = rate * days;
+    } else if(mode==='weekly'){
+      const days = start && end ? Math.max(0, Math.floor((new Date(end.getFullYear(),end.getMonth(),end.getDate()) - new Date(start.getFullYear(),start.getMonth(),start.getDate()))/86400000) + 1) : 0;
+      const weeks = days===0 ? 0 : Math.ceil(days/7);
+      amount = rate * weeks;
+    } else { amount = rate; }
+    const val = Math.round(amount).toLocaleString('fr-FR') + ' {{ settings.currency_code or 'SEK' }}';
+    document.getElementById('amountPreview').value = val;
+  }
+  checkWarnings();
+}
+</script>
+{% endblock %}

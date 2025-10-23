@@ -1,0 +1,77 @@
+{% extends "_layout.html" %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+  <div class="h1">{{ month_label }}</div>
+  <div class="small" style="margin-right:auto;margin-left:12px;">Total {{ year }} (excl. VAT): <strong>{{ year_total_ht|fmt_money }} {{ settings.currency_code or 'SEK' }}</strong></div>
+  <div class="month-nav">
+    <a class="btn secondary" href="{{ url_for('monthly_summary', year=prev_year, month=prev_month) }}">← Previous</a>
+    <a class="btn secondary" href="{{ url_for('monthly_summary', year=current_year, month=current_month) }}">Today</a>
+    <a class="btn secondary" href="{{ url_for('monthly_summary', year=next_year, month=next_month) }}">Next →</a>
+  </div>
+</div>
+
+<div class="grid-3">
+  <div class="card"><div class="small">Total (excl. VAT)</div><div style="font-size:20px;font-weight:700;">{{ totals.total_ht|fmt_money }} {{ settings.currency_code or 'SEK' }}</div></div>
+  <div class="card"><div class="small">Invoice Amount (incl. VAT)</div><div style="font-size:20px;font-weight:700;">{{ totals.total_gross|fmt_money }} {{ settings.currency_code or 'SEK' }}</div></div>
+  <div class="card" style="background:#eef5ff;"><div class="small">Net ({{ net_rate_str }})</div><div style="font-size:20px;font-weight:700;">{{ totals.total_net|fmt_money }} {{ settings.currency_code or 'SEK' }}</div></div>
+</div>
+
+{% for card in client_cards %}
+<div class="card invoice-card" style="background:{% if card.paid %}#ecfdf5{% elif card.sent %}#fff7ed{% else %}var(--card){% endif %};">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div class="h1" style="font-size:16px;display:flex;align-items:center;gap:8px;">
+      {% if card.client.logo_url %}<img src="{{ card.client.logo_url }}" style="height:22px">{% endif %}
+      {{ card.client.name }}
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <label class="checkbox"><input class="sentChk" type="checkbox" {% if card.sent %}checked{% endif %} onclick="toggleInvoice(this, {{ card.client.id }}, {{ year }}, {{ month }}, 'sent')"> <span class="small">Invoice sent</span></label>
+      <label class="checkbox"><input class="paidChk" type="checkbox" {% if card.paid %}checked{% endif %} onclick="toggleInvoice(this, {{ card.client.id }}, {{ year }}, {{ month }}, 'paid')"> <span class="small">Invoice paid</span></label>
+      <div class="small">Invoice #</div>
+      <input class="input" style="width:160px" placeholder="e.g., 2025-010" value="{{ card.invoice_number or '' }}" onblur="saveInvoiceNumber(this, {{ card.client.id }}, {{ year }}, {{ month }})">
+    </div>
+  </div>
+  <div class="grid-3" style="margin-bottom:8px;">
+    <div><div class="small">Total (excl. VAT)</div><div style="font-weight:700;">{{ card.ht|fmt_money }} {{ settings.currency_code or 'SEK' }}</div></div>
+    <div><div class="small">Invoice Amount (incl. VAT)</div><div style="font-weight:700;">{{ card.gross|fmt_money }} {{ settings.currency_code or 'SEK' }}</div></div>
+    <div><div class="small">Net ({{ net_rate_str }})</div><div style="font-weight:700;">{{ card.net|fmt_money }} {{ settings.currency_code or 'SEK' }}</div></div>
+  </div>
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Date</th><th>Duration</th><th>Role</th><th>Detail</th><th>Amount</th></tr></thead>
+    <tbody>
+      {% for j in card.jobs %}
+      <tr>
+        <td>{{ j.start_dt.strftime('%Y-%m-%d') }}</td>
+        <td>{{ j.duration_hours|round(0)|int }} h</td>
+        <td>{{ j.role.name }} ({{ 'per hour' if j.role.mode=='hourly' else 'per production' }})</td>
+        <td>{{ j.detail }}</td>
+        <td>{{ j.amount_sek|fmt_money }} {{ settings.currency_code or 'SEK' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+function toggleInvoice(el, clientId, year, month, field){
+  fetch('{{ url_for("toggle_invoice") }}', {
+    method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`client_id=${clientId}&year=${year}&month=${month}&field=${field}`
+  }).then(()=>{
+    const card = el.closest('.invoice-card');
+    const sent = card.querySelector('.sentChk').checked;
+    const paid = card.querySelector('.paidChk').checked;
+    card.style.background = paid ? '#ecfdf5' : (sent ? '#fff7ed' : 'var(--card)');
+  });
+}
+function saveInvoiceNumber(input, clientId, year, month){
+  const value = encodeURIComponent(input.value || '');
+  fetch('{{ url_for("set_invoice_number") }}', {
+    method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:`client_id=${clientId}&year=${year}&month=${month}&invoice_number=${value}`
+  });
+}
+</script>
+{% endblock %}

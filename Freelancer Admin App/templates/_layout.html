@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}</title>
+  <link rel="icon" href="{{ settings.favicon_url or url_for('static', filename='favicon.ico') }}">
+  <link rel="apple-touch-icon" href="{{ settings.company_logo_url or url_for('static', filename='logo.svg') }}">
+  <link rel="icon" sizes="192x192" href="{{ settings.company_logo_url or url_for('static', filename='logo.svg') }}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="h1" style="display:flex;align-items:center;gap:10px;">
+        <img src="{{ (settings.company_logo_url if settings and settings.company_logo_url else url_for('static', filename='logo.svg')) }}" alt="logo" style="height:28px">
+        {{ app_name }}
+      </div>
+      <div class="small" style="text-transform:uppercase;">{{ today }}</div>
+      <button class="btn secondary" id="menuBtn" onclick="toggleNav()" style="display:none;">Menu</button>
+      <nav class="nav" id="mainNav">
+        <a href="{{ url_for('jobs') }}">Jobs</a>
+        <a href="{{ url_for('calendar_view') }}">Calendar</a>
+        <a href="{{ url_for('monthly_summary') }}">Monthly Summary</a>
+        <a href="{{ url_for('clients_roles') }}">Clients & Roles</a>
+        <a href="{{ url_for('statistics') }}">Statistics</a>
+        <a href="{{ url_for('settings_view') }}">Settings</a>
+        {% if session.get('user') %}<a href="{{ url_for('logout') }}">Logout</a>{% endif %}
+      </nav>
+    </div>
+    {% block content %}{% endblock %}
+  </div>
+  <script>
+  function toggleNav(){
+    var n = document.getElementById('mainNav');
+    if(n.style.display === 'flex' || n.style.display === ''){ n.style.display='none'; } else { n.style.display='flex'; }
+  }
+  function checkWidth(){
+    var w = window.innerWidth || document.documentElement.clientWidth;
+    var btn = document.getElementById('menuBtn');
+    var nav = document.getElementById('mainNav');
+    if(w < 720){
+      btn.style.display='inline-block';
+      nav.style.display='none';
+    }else{
+      btn.style.display='none';
+      nav.style.display='flex';
+    }
+  }
+  window.addEventListener('resize', checkWidth);
+  window.addEventListener('load', checkWidth);
+  </script>
+  <script>
+  // Auto-logout after 10 minutes of inactivity on authenticated pages
+  (function() {
+    try {
+      var timeout;
+      function resetTimer(){
+        clearTimeout(timeout);
+        timeout = setTimeout(function(){ window.location.href = '/logout'; }, 10*60*1000);
+      }
+      window.addEventListener('load', resetTimer);
+      ['click','mousemove','keypress','scroll','touchstart'].forEach(function(evt){
+        document.addEventListener(evt, resetTimer, {passive:true});
+      });
+    } catch(e){}
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+{% extends "_layout.html" %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+  <div class="h1">Clients & Roles</div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Client</th><th>Logo</th><th>Roles</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for c in clients %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td>{% if c.logo_url %}<img src="{{ c.logo_url }}" style="height:24px">{% else %}<span class="small">None</span>{% endif %}</td>
+        <td>
+          <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Name</th><th>Mode</th><th>Rate</th><th>Status</th><th>Save</th><th>Archive</th></tr></thead>
+            <tbody>
+              {% for r in c.roles %}
+              <tr>
+                <form method="post" action="{{ url_for('update_role', role_id=r.id) }}">
+                  <td><input class="input" name="name" value="{{ r.name }}"></td>
+                  <td>
+                    <select class="input" name="mode">
+                      <option value="hourly" {% if r.mode=='hourly' %}selected{% endif %}>per hour</option>
+                      <option value="daily" {% if r.mode=='daily' %}selected{% endif %}>per day</option>
+                      <option value="weekly" {% if r.mode=='weekly' %}selected{% endif %}>per week</option>
+                      <option value="production" {% if r.mode=='production' %}selected{% endif %}>per production</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="small">Rate ({{ settings.currency_code or 'SEK' }})</div>
+                    <input class="input" type="number" step="1" name="rate_sek" value="{{ r.rate_sek|int }}">
+                    <div class="small" style="margin-top:6px;">VAT (%)</div>
+                    <input class="input" type="number" step="1" name="vat_percent" value="{{ r.vat_percent or 25 }}">
+                  </td>
+                  <td>{{ 'Active' if r.active else 'Archived' }}</td>
+                  <td><button class="btn secondary">Save</button></td>
+                </form>
+                <td>
+                  {% if r.active %}
+                    <form method="post" action="{{ url_for('archive_role', role_id=r.id) }}"><button class="btn">Archive</button></form>
+                  {% else %}
+                    <form method="post" action="{{ url_for('unarchive_role', role_id=r.id) }}"><button class="btn">Unarchive</button></form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          </div>
+        </td>
+        <td><a class="btn secondary" href="{{ url_for('edit_client', client_id=c.id) }}">Edit client</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="h1" style="font-size:18px;">Add Client</div>
+  <form method="post" action="{{ url_for('add_client') }}">
+    <div class="grid-3">
+      <div><div class="small">Name</div><input class="input" name="name" required></div>
+      <div><div class="small">Default VAT (%)</div>
+        <select class="input" name="default_vat_percent"><option value="25">25</option><option value="0">0</option></select>
+      </div>
+      <div><div class="small">Logo URL (optional)</div><input class="input" name="logo_url" placeholder="https://..."></div>
+    </div>
+    <div style="margin-top:10px;"><button class="btn">Save Client</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="h1" style="font-size:18px;">Add Role</div>
+  <form method="post" action="{{ url_for('add_role') }}">
+    <div class="grid-3">
+      <div><div class="small">Client</div>
+        <select class="input" name="client_id" required>{% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+      </div>
+      <div><div class="small">Role name</div><input class="input" name="name" required></div>
+      <div><div class="small">Mode</div>
+        <select class="input" name="mode">
+          <option value="hourly">per hour</option>
+          <option value="daily">per day</option>
+          <option value="weekly">per week</option>
+          <option value="production">per production</option>
+        </select>
+      </div>
+      <div><div class="small">Rate ({{ settings.currency_code or 'SEK' }})</div><input class="input" type="number" step="1" name="rate_sek" required></div>
+      <div><div class="small">VAT (%)</div><input class="input" type="number" step="1" name="vat_percent" value="25"></div>
+    </div>
+    <div style="margin-top:10px;"><button class="btn">Save Role</button></div>
+  </form>
+</div>
+{% endblock %}

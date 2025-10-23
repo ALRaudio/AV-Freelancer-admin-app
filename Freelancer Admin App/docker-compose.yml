@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  alr_audio_admin:
+    build: .
+    container_name: alr_audio_admin_app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+    environment:
+      - APP_NAME=Freelancer Admin App Admin
+      - DEFAULT_VAT_PERCENT=25
+      - APP_TIMEZONE=Europe/Stockholm
+    restart: unless-stopped

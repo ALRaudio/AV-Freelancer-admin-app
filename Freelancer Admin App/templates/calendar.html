@@ -1,0 +1,11 @@
+{% extends "_layout.html" %}
+{% block content %}
+<div class="card">
+  <div class="h1">Google Calendar</div>
+  {% if embed_url %}
+    <iframe src="{{ embed_url }}" style="border:0;margin-top:10px" width="100%" height="640" frameborder="0" scrolling="no"></iframe>
+  {% else %}
+    <p class="small">No embed URL set. Go to <a href="{{ url_for('settings_view') }}">Settings</a> and paste your Google Calendar embed URL.</p>
+  {% endif %}
+</div>
+{% endblock %}
